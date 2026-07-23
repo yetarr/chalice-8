@@ -4,7 +4,7 @@ A CHIP-8 emulator written in Rust, built with as few external crates as possible
 
 ## Status
 
-In development. Machine state (memory, registers, stack, timers, display buffer) and ROM loading are implemented. The fetch-decode-execute loop and opcode set are not yet implemented.
+In development. Machine state (memory, registers, stack, timers, display buffer) and ROM loading are implemented. The fetch-decode-execute loop and opcode set are implemented for a limited set of opcodes.
 
 ## Usage
 
