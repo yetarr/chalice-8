@@ -1,6 +1,7 @@
 use std::fs::File;
-use std::io::Read;
+use std::io::{self, Read};
 
+const INSTRUCTION_SIZE: u16 = 2;
 const FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0,
     0x20, 0x60, 0x20, 0x20, 0x70,
@@ -28,7 +29,8 @@ struct Machine {
     pc: u16,
     dt: u8,
     st: u8,
-    display_buf: [bool; 64 * 32]
+    display_buf: [bool; 64 * 32],
+    program_size: u16,
 }
 
 impl Machine {
@@ -42,23 +44,38 @@ impl Machine {
             dt: 0,
             st: 0,
             display_buf: [false; 64 * 32],
+            program_size: 0,
         };
 
         machine.memory[0x50..0x50 + 80].copy_from_slice(&FONT);
         machine
     }
 
-    fn read(&mut self, path: &str) -> std::io::Result<()> {
+    fn load(&mut self, path: &str) -> io::Result<()> {
         let mut file = File::open(path)?;
         let mut contents = Vec::new();
         file.read_to_end(&mut contents)?;
         self.memory[0x200..0x200 + contents.len()].copy_from_slice(&contents);
+        self.program_size = contents.len() as u16;
         Ok(())
+    }
+
+    fn read(&mut self) -> u16 {
+        if self.pc + 1 >= self.memory.len() as u16 {
+            panic!("invalid memory access")
+        }
+
+        let (high, low) = (self.memory[self.pc as usize] as u16, self.memory[self.pc as usize + 1] as u16);
+        self.pc += INSTRUCTION_SIZE;
+        (high << 8) | low
     }
 }
 
 fn main() {
     let mut machine = Machine::new();
-    machine.read("test.ch8").unwrap();
-    println!("{:?}", machine.memory);
+    machine.load("test.ch8").unwrap();
+    while machine.pc < 0x200 + machine.program_size {
+        let ins = machine.read();
+        println!("0x{:04x}", ins);
+    }
 }
