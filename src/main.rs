@@ -21,6 +21,14 @@ const FONT: [u8; 80] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80,
 ];
 
+enum Operation {
+    Clear,
+    SetPc(u16),
+    SetRg(usize, u8),
+    Unsuported,
+}
+
+#[derive(Debug)]
 struct Machine {
     memory: [u8; 4096],
     registers: [u8; 16],
@@ -69,6 +77,31 @@ impl Machine {
         self.pc += INSTRUCTION_SIZE;
         (high << 8) | low
     }
+
+    fn decode(&self, opcode: u16) -> Operation {
+        let n1 = (opcode & 0xF000) >> 12;
+        let n2 = (opcode & 0x0F00) >> 8;
+        let n3 = (opcode & 0x00F0) >> 4;
+        let n4 = opcode & 0x000F;
+        let nnn = opcode & 0x0FFF;
+        let nn = (opcode & 0x00FF) as u8;
+        
+        match n1 {
+            0x0 if opcode == 0x00E0 => Operation::Clear,
+            0x1 => Operation::SetPc(nnn),
+            0x6 => Operation::SetRg(n2 as usize, nn),
+            _   => Operation::Unsuported
+        }
+    }
+
+    fn execute(&mut self, op: Operation) {
+        match op {
+            Operation::Clear => self.display_buf = [false; 64 * 32],
+            Operation::SetPc(x) => self.pc = x,
+            Operation::SetRg(i, x) => self.registers[i] = x,
+            Operation::Unsuported => {}
+        };
+    }
 }
 
 fn main() {
@@ -77,5 +110,9 @@ fn main() {
     while machine.pc < 0x200 + machine.program_size {
         let ins = machine.read();
         println!("0x{:04x}", ins);
+        let op = machine.decode(ins);
+        machine.execute(op);
     }
+
+    //println!("{:?}", machine);
 }
