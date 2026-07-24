@@ -28,6 +28,8 @@ enum Operation {
     SetPc(u16),
     SetRg(usize, u8),
     Arithmetic(u8, usize, usize),
+    SkipK(bool, usize, u8),
+    SkipR(bool, usize, usize),
     Unsupported,
     None,
 }
@@ -93,6 +95,9 @@ impl Machine {
         match n1 {
             0x0 if opcode == 0x00E0 => Operation::Clear,
             0x1 => Operation::SetPc(nnn),
+            0x3 => Operation::SkipK(true, n2 as usize, nn),
+            0x4 => Operation::SkipK(false, n2 as usize, nn),
+            0x5 if n4 == 0 => Operation::SkipR(true, n2 as usize, n3 as usize),
             0x6 => Operation::SetRg(n2 as usize, nn),
             0x8 => {
                 let n2 = n2 as usize;
@@ -109,7 +114,8 @@ impl Machine {
                     0xE => Operation::Arithmetic(8, n2, n3),
                     _   => Operation::None,
                 }
-            }
+            },
+            0x9 if n4 == 0 => Operation::SkipR(false, n2 as usize, n3 as usize),
             _   => Operation::Unsupported,
         }
     }
@@ -152,7 +158,21 @@ impl Machine {
                     },
                     _ => {},
                 }
-            }
+            },
+            Operation::SkipK(use_eq, x, kk) => {
+                let vx = self.registers[x];
+                let skip = if use_eq { vx == kk } else { vx != kk };
+                if skip {
+                    self.pc += INSTRUCTION_SIZE;
+                }
+            },
+            Operation::SkipR(use_eq, x, y) => {
+                let (vx, vy) = (self.registers[x], self.registers[y]);
+                let skip = if use_eq { vx == vy } else { vx != vy };
+                if skip {
+                    self.pc += INSTRUCTION_SIZE;
+                }
+            },
             Operation::Unsupported | Operation::None => {},
         };
     }
