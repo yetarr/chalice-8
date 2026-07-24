@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{self, Read};
+use std::env;
 
 const INSTRUCTION_SIZE: u16 = 2;
 const REG_VF: usize = 15;
@@ -179,15 +180,33 @@ impl Machine {
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() < 2 {
+        eprintln!("usage: {} <rom_path> [-t]", args[0]);
+        return;
+    }
+
+    let rom_path = &args[1];
+    let trace = args.iter().any(|a| a == "-t");
+    
     let mut machine = Machine::new();
-    machine.load("test.ch8").unwrap();
+    machine.load(rom_path).unwrap();
     while machine.pc < 0x200 + machine.program_size {
+        if trace { 
+            println!("-------------Instruction-------------"); 
+            println!("PC: {}", machine.pc);
+        }
         let ins = machine.read();
-        println!("0x{:04x}", ins);
+        if trace { println!("0x{:04x}", ins); }
         let op = machine.decode(ins);
-        println!("{:?}", op);
+        if trace { println!("{:?}", op); }
         machine.execute(op);
-        println!("{:?}", machine.registers);
+        if trace {
+            println!("{:?}", machine.registers);
+            println!("PC: {}", machine.pc);
+            println!("-----------------End-----------------");
+        }
     }
 
     //println!("{:?}", machine);
