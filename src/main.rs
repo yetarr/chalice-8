@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{self, Read};
 
 const INSTRUCTION_SIZE: u16 = 2;
+const REG_VF: usize = 15;
 const FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0,
     0x20, 0x60, 0x20, 0x20, 0x70,
@@ -21,11 +22,14 @@ const FONT: [u8; 80] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80,
 ];
 
+#[derive(Debug)]
 enum Operation {
     Clear,
     SetPc(u16),
     SetRg(usize, u8),
+    Arithmetic(u8, usize, usize),
     Unsupported,
+    None,
 }
 
 #[derive(Debug)]
@@ -85,11 +89,27 @@ impl Machine {
         let n4 = opcode & 0x000F;
         let nnn = opcode & 0x0FFF;
         let nn = (opcode & 0x00FF) as u8;
-        
+
         match n1 {
             0x0 if opcode == 0x00E0 => Operation::Clear,
             0x1 => Operation::SetPc(nnn),
             0x6 => Operation::SetRg(n2 as usize, nn),
+            0x8 => {
+                let n2 = n2 as usize;
+                let n3 = n3 as usize;
+                match n4 {
+                    0x0 => Operation::Arithmetic(0, n2, n3),
+                    0x1 => Operation::Arithmetic(1, n2, n3),
+                    0x2 => Operation::Arithmetic(2, n2, n3),
+                    0x3 => Operation::Arithmetic(3, n2, n3),
+                    0x4 => Operation::Arithmetic(4, n2, n3),
+                    0x5 => Operation::Arithmetic(5, n2, n3),
+                    0x6 => Operation::Arithmetic(6, n2, n3),
+                    0x7 => Operation::Arithmetic(7, n2, n3),
+                    0xE => Operation::Arithmetic(8, n2, n3),
+                    _   => Operation::None,
+                }
+            }
             _   => Operation::Unsupported,
         }
     }
@@ -99,7 +119,41 @@ impl Machine {
             Operation::Clear => self.display_buf = [false; 64 * 32],
             Operation::SetPc(x) => self.pc = x,
             Operation::SetRg(i, x) => self.registers[i] = x,
-            Operation::Unsupported => {},
+            Operation::Arithmetic(code, x, y) => {
+                let (vx, vy) = (self.registers[x], self.registers[y]);
+                match code {
+                    0 => self.registers[x] = vy,
+                    1 => self.registers[x] = vx | vy,
+                    2 => self.registers[x] = vx & vy,
+                    3 => self.registers[x] = vx ^ vy,
+                    4 => {
+                        let (res, overflow) = vx.overflowing_add(vy);
+                        self.registers[REG_VF] = if overflow { 1 } else { 0 };
+                        self.registers[x] = res;
+                    },
+                    5 => {
+                        let (res, _) = vx.overflowing_sub(vy);
+                        self.registers[REG_VF] = if vx >= vy { 1 } else { 0 };
+                        self.registers[x] = res;
+                    },
+                    6 => {
+                        self.registers[REG_VF] = if vx & 1 == 1 { 1 } else { 0 };
+                        self.registers[x] = vx >> 1;
+                    },
+                    7 => {
+                        let (res, _) = vy.overflowing_sub(vx);
+                        self.registers[REG_VF] = if vy >= vx { 1 } else { 0 };
+                        self.registers[x] = res;
+                    },
+                    8 => {
+                        let msb = (vx >> 7) & 1; 
+                        self.registers[REG_VF] = if msb == 1 { 1 } else { 0 };
+                        self.registers[x] = vx.wrapping_shl(1);
+                    },
+                    _ => {},
+                }
+            }
+            Operation::Unsupported | Operation::None => {},
         };
     }
 }
@@ -111,7 +165,9 @@ fn main() {
         let ins = machine.read();
         println!("0x{:04x}", ins);
         let op = machine.decode(ins);
+        println!("{:?}", op);
         machine.execute(op);
+        println!("{:?}", machine.registers);
     }
 
     //println!("{:?}", machine);
