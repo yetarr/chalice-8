@@ -11,8 +11,10 @@ In development. Implemented: machine state (memory, registers, stack, timers, di
 - `6XNN` - set register
 - `8XY0`–`8XYE` - full arithmetic/logic family (OR, AND, XOR, add/sub with carry, shifts)
 - `3XNN`, `4XNN`, `5XY0`, `9XY0` - conditional skips
+- `2NNN`, `00ee` - subroutine calls
+- `ANNN` - set index register
 
-Not yet implemented: subroutine calls (`2NNN`/`00EE`), the index register (`ANNN`), sprite drawing (`DXYN`), display rendering, keyboard input, and timers.
+Not yet implemented: sprite drawing (`DXYN`), display rendering, keyboard input, and timers.
 
 ## Usage
 

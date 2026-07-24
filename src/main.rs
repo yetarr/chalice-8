@@ -27,10 +27,13 @@ const FONT: [u8; 80] = [
 enum Operation {
     Clear,
     SetPc(u16),
+    SetI(u16),
     SetRg(usize, u8),
     Arithmetic(u8, usize, usize),
     SkipK(bool, usize, u8),
     SkipR(bool, usize, usize),
+    Call(u16),
+    Return,
     Unsupported,
     None,
 }
@@ -94,8 +97,15 @@ impl Machine {
         let nn = (opcode & 0x00FF) as u8;
 
         match n1 {
-            0x0 if opcode == 0x00E0 => Operation::Clear,
+            0x0 => {
+                match n4 {
+                    0x0 if opcode == 0x00E0 => Operation::Clear,
+                    0xE if opcode == 0x00EE => Operation::Return,
+                    _ => Operation::None,
+                }
+            },
             0x1 => Operation::SetPc(nnn),
+            0x2 => Operation::Call(nnn),
             0x3 => Operation::SkipK(true, n2 as usize, nn),
             0x4 => Operation::SkipK(false, n2 as usize, nn),
             0x5 if n4 == 0 => Operation::SkipR(true, n2 as usize, n3 as usize),
@@ -117,6 +127,7 @@ impl Machine {
                 }
             },
             0x9 if n4 == 0 => Operation::SkipR(false, n2 as usize, n3 as usize),
+            0xA => Operation::SetI(nnn),
             _   => Operation::Unsupported,
         }
     }
@@ -125,6 +136,7 @@ impl Machine {
         match op {
             Operation::Clear => self.display_buf = [false; 64 * 32],
             Operation::SetPc(x) => self.pc = x,
+            Operation::SetI(x) => self.i = x,
             Operation::SetRg(i, x) => self.registers[i] = x,
             Operation::Arithmetic(code, x, y) => {
                 let (vx, vy) = (self.registers[x], self.registers[y]);
@@ -174,6 +186,11 @@ impl Machine {
                     self.pc += INSTRUCTION_SIZE;
                 }
             },
+            Operation::Call(nnn) => {
+                self.stack.push(self.pc);
+                self.pc = nnn;
+            },
+            Operation::Return => self.pc = self.stack.pop().expect("return with empty stack"),
             Operation::Unsupported | Operation::None => {},
         };
     }
@@ -181,33 +198,36 @@ impl Machine {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-
     if args.len() < 2 {
         eprintln!("usage: {} <rom_path> [-t]", args[0]);
         return;
     }
-
     let rom_path = &args[1];
-    let trace = args.iter().any(|a| a == "-t");
+    let mut trace = args.iter().any(|a| a == "-t");
     
     let mut machine = Machine::new();
     machine.load(rom_path).unwrap();
+    let mut prev_pc = machine.pc;
     while machine.pc < 0x200 + machine.program_size {
         if trace { 
             println!("-------------Instruction-------------"); 
             println!("PC: {}", machine.pc);
         }
         let ins = machine.read();
-        if trace { println!("0x{:04x}", ins); }
+        if trace { println!("Instruction: 0x{:04x}", ins); }
         let op = machine.decode(ins);
-        if trace { println!("{:?}", op); }
+        if trace { println!("Token: {:?}", op); }
         machine.execute(op);
         if trace {
-            println!("{:?}", machine.registers);
+            println!("Registers: {:?}", machine.registers);
             println!("PC: {}", machine.pc);
+            println!("Stack: {:?}", machine.stack);
             println!("-----------------End-----------------");
         }
+        if prev_pc == machine.pc { 
+            return;
+        } else {
+            prev_pc = machine.pc;
+        }
     }
-
-    //println!("{:?}", machine);
 }
