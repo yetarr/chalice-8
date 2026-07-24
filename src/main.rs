@@ -25,7 +25,7 @@ enum Operation {
     Clear,
     SetPc(u16),
     SetRg(usize, u8),
-    Unsuported,
+    Unsupported,
 }
 
 #[derive(Debug)]
@@ -90,7 +90,7 @@ impl Machine {
             0x0 if opcode == 0x00E0 => Operation::Clear,
             0x1 => Operation::SetPc(nnn),
             0x6 => Operation::SetRg(n2 as usize, nn),
-            _   => Operation::Unsuported
+            _   => Operation::Unsupported,
         }
     }
 
@@ -99,7 +99,7 @@ impl Machine {
             Operation::Clear => self.display_buf = [false; 64 * 32],
             Operation::SetPc(x) => self.pc = x,
             Operation::SetRg(i, x) => self.registers[i] = x,
-            Operation::Unsuported => {}
+            Operation::Unsupported => {},
         };
     }
 }
