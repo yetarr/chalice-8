@@ -4,7 +4,7 @@ A CHIP-8 emulator written in Rust, built with as few external crates as possible
 
 ## Status
 
-In development. Implemented: machine state (memory, registers, stack, timers, display buffer), ROM loading, the fetch-decode-execute loop, and the following opcodes:
+In development. Implemented: machine state (memory, registers, stack, timers, display buffer), ROM loading, the fetch-decode-execute loop, simple cli display and the following opcodes:
 
 - `00E0` - clear display
 - `1NNN` - jump
@@ -13,8 +13,9 @@ In development. Implemented: machine state (memory, registers, stack, timers, di
 - `3XNN`, `4XNN`, `5XY0`, `9XY0` - conditional skips
 - `2NNN`, `00ee` - subroutine calls
 - `ANNN` - set index register
+- `DXYN` - sprite drawing
 
-Not yet implemented: sprite drawing (`DXYN`), display rendering, keyboard input, and timers.
+Not yet implemented: display rendering, keyboard input, and timers.
 
 ## Usage
 

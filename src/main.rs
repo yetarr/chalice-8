@@ -34,6 +34,7 @@ enum Operation {
     SkipR(bool, usize, usize),
     Call(u16),
     Return,
+    Display(u8, u8, usize),
     Unsupported,
     None,
 }
@@ -128,6 +129,7 @@ impl Machine {
             },
             0x9 if n4 == 0 => Operation::SkipR(false, n2 as usize, n3 as usize),
             0xA => Operation::SetI(nnn),
+            0xD => Operation::Display(n2 as u8, n3 as u8, n4 as usize),
             _   => Operation::Unsupported,
         }
     }
@@ -190,9 +192,36 @@ impl Machine {
                 self.stack.push(self.pc);
                 self.pc = nnn;
             },
+            Operation::Display(x, y, n) => {
+                self.registers[REG_VF] = 0;
+                let bytes = &self.memory[self.i as usize..self.i as usize + n];
+                for (row, byte) in bytes.iter().enumerate() {
+                    for bit_pos in 0..8 {
+                        let px = (x as usize + bit_pos) % 64;
+                        let py = (y as usize + row) % 32;
+                        let pos = py * 64 + px;
+                        let sprite_pixel = ((byte >> (7 - bit_pos)) & 1) == 1;
+                        let prev = self.display_buf[pos];
+                        self.display_buf[pos] ^= sprite_pixel;
+                        if prev && !self.display_buf[pos] {
+                            self.registers[REG_VF] = 1;
+                        }
+                    }
+                }
+            },
             Operation::Return => self.pc = self.stack.pop().expect("return with empty stack"),
             Operation::Unsupported | Operation::None => {},
         };
+    }
+
+    fn print_display(&self) {
+        for y in 0..32 {
+            for x in 0..64 {
+                let pixel = self.display_buf[y * 64 + x];
+                print!("{}", if pixel { "#" } else { " " });
+            }
+            println!();
+        }
     }
 }
 
@@ -225,9 +254,11 @@ fn main() {
             println!("-----------------End-----------------");
         }
         if prev_pc == machine.pc { 
-            return;
+            break;
         } else {
             prev_pc = machine.pc;
         }
     }
+
+    machine.print_display();
 }
