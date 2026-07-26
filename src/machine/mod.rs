@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{self, Read};
+use std::time::{UNIX_EPOCH, SystemTime};
 
 use crate::parser;
 
@@ -15,6 +16,9 @@ pub const FONT: [u8; 80] = [
     0xF0, 0xE0, 0x90, 0x90, 0x90, 0xE0, 0xF0, 0x80, 0xF0, 0x80, 0xF0, 0xF0, 0x80, 0xF0, 0x80, 0x80,
 ];
 
+const LCG_A: u64 = 6364136223846793005;
+const LCG_C: u64 = 1442695040888963407;
+
 #[derive(Debug)]
 pub struct Machine {
     memory: [u8; 4096],
@@ -26,10 +30,16 @@ pub struct Machine {
     st: u8,
     display_buf: [bool; 64 * 32],
     program_size: u16,
+    rng_state: u64,
 }
 
 impl Machine {
     pub fn new() -> Self {
+        let seed = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos() as u64;
+        
         let mut machine = Machine {
             memory: [0; 4096],
             registers: [0; 16],
@@ -40,6 +50,7 @@ impl Machine {
             st: 0,
             display_buf: [false; 64 * 32],
             program_size: 0,
+            rng_state: seed,
         };
 
         machine.memory[0x50..0x50 + 80].copy_from_slice(&FONT);
@@ -102,6 +113,11 @@ impl Machine {
         println!("Stack:\n\t{:?}", self.stack);
     }
 
+    pub fn next_random(&mut self) -> u8 {
+        self.rng_state = self.rng_state.wrapping_mul(LCG_A).wrapping_add(LCG_C);
+        (self.rng_state >> 24) as u8
+    }
+    
     pub fn print_display(&self) {
         for y in 0..32 {
             for x in 0..64 {

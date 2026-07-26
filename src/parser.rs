@@ -4,7 +4,9 @@ pub enum Operation {
     SetPc(u16),
     SetI(u16),
     SetRg(usize, u8),
+    AddReg(usize, u8),
     Arithmetic(u8, usize, usize),
+    Random(usize, u8),
     SkipK(bool, usize, u8),
     SkipR(bool, usize, usize),
     Call(u16),
@@ -34,6 +36,7 @@ pub fn decode(opcode: u16) -> Operation {
         0x4 => Operation::SkipK(false, n2 as usize, nn),
         0x5 if n4 == 0 => Operation::SkipR(true, n2 as usize, n3 as usize),
         0x6 => Operation::SetRg(n2 as usize, nn),
+        0x7 => Operation::AddReg(n2 as usize, nn),
         0x8 => {
             let n2 = n2 as usize;
             let n3 = n3 as usize;
@@ -52,6 +55,7 @@ pub fn decode(opcode: u16) -> Operation {
         },
         0x9 if n4 == 0 => Operation::SkipR(false, n2 as usize, n3 as usize),
         0xA => Operation::SetI(nnn),
+        0xC => Operation::Random(n2 as usize, nn),
         0xD => Operation::Display(n2 as u8, n3 as u8, n4 as usize),
         _ => Operation::Unsupported,
     }

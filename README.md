@@ -14,6 +14,8 @@ In development. Implemented: machine state (memory, registers, stack, timers, di
 - `2NNN`, `00ee` - subroutine calls
 - `ANNN` - set index register
 - `DXYN` - sprite drawing
+- `7XNN` - add to register
+- `CXNN` - randomize
 
 Not yet implemented: display rendering, keyboard input, and timers.
 

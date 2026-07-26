@@ -8,6 +8,11 @@ impl Machine {
             Operation::SetPc(x) => self.pc = x,
             Operation::SetI(x) => self.i = x,
             Operation::SetRg(i, x) => self.registers[i] = x,
+            Operation::AddReg(x, kk) => {
+                let vx = self.registers[x];
+                let res = vx.wrapping_add(kk);
+                self.registers[x] = res;
+            },
             Operation::Arithmetic(code, x, y) => {
                 let (vx, vy) = (self.registers[x], self.registers[y]);
                 match code {
@@ -41,7 +46,11 @@ impl Machine {
                     }
                     _ => {}
                 }
-            }
+            },
+            Operation::Random(x, kk) => {
+                let rnd = self.next_random();
+                self.registers[x] = rnd & kk;
+            },
             Operation::SkipK(use_eq, x, kk) => {
                 let vx = self.registers[x];
                 let skip = if use_eq { vx == kk } else { vx != kk };
