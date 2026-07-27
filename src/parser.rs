@@ -14,7 +14,7 @@ pub enum Operation {
     SkipI(bool, usize),
     Call(u16),
     Return,
-    Display(u8, u8, usize),
+    Display(usize, usize, usize),
     CopyDelay(usize),
     WaitKey(usize),
     SetDelay(usize),
@@ -63,7 +63,7 @@ pub fn decode(opcode: u16) -> Operation {
         0x9 if n4 == 0 => Operation::SkipR(false, n2 as usize, n3 as usize),
         0xA => Operation::SetI(nnn),
         0xC => Operation::Random(n2 as usize, nn),
-        0xD => Operation::Display(n2 as u8, n3 as u8, n4 as usize),
+        0xD => Operation::Display(n2 as usize, n3 as usize, n4 as usize),
         0xE => match nn {
             0x9E => Operation::SkipI(true, n2 as usize),
             0xA1 => Operation::SkipI(false, n2 as usize),

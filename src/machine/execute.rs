@@ -73,7 +73,11 @@ impl Machine {
             Operation::SkipI(con_key_down, x) => {
                 let vx = self.registers[x] as usize;
                 let key_pressed = self.keys[vx];
-                let skip = if con_key_down { key_pressed } else { !key_pressed };
+                let skip = if con_key_down {
+                    key_pressed
+                } else {
+                    !key_pressed
+                };
                 if skip {
                     self.pc += INSTRUCTION_SIZE;
                 }
@@ -88,12 +92,13 @@ impl Machine {
                 self.i = addr;
             }
             Operation::Display(x, y, n) => {
+                let (vx, vy) = (self.registers[x], self.registers[y]);
                 self.registers[REG_VF] = 0;
                 let bytes = &self.memory[self.i as usize..self.i as usize + n];
                 for (row, byte) in bytes.iter().enumerate() {
                     for bit_pos in 0..8 {
-                        let px = (x as usize + bit_pos) % 64;
-                        let py = (y as usize + row) % 32;
+                        let px = (vx as usize + bit_pos) % 64;
+                        let py = (vy as usize + row) % 32;
                         let pos = py * 64 + px;
                         let sprite_pixel = ((byte >> (7 - bit_pos)) & 1) == 1;
                         let prev = self.display_buf[pos];
@@ -106,9 +111,9 @@ impl Machine {
             }
             Operation::Return => self.pc = self.stack.pop().expect("return with empty stack"),
             Operation::CopyDelay(x) => self.registers[x] = self.dt,
-            Operation::WaitKey(x) => {}
+            Operation::WaitKey(_x) => {}
             Operation::SetDelay(x) => self.dt = self.registers[x],
-            Operation::SetSound(x) => self.st = self.registers[x], 
+            Operation::SetSound(x) => self.st = self.registers[x],
             Operation::Invalid(ins) => panic!("invalid instruction: {ins}"),
             Operation::Unsupported => {}
         };
