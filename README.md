@@ -16,8 +16,9 @@ In development. Implemented: machine state (memory, registers, stack, timers, di
 - `DXYN` - sprite drawing
 - `7XNN` - add to register
 - `CXNN` - randomize
+- `FX07`–`FX15`–`FX18`–`FX1E`–`FX29` - timers and sprite loading
 
-Not yet implemented: display rendering, keyboard input, and timers.
+Not yet implemented: display rendering and keyboard input.
 
 ## Usage
 
