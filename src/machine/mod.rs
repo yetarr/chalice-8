@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{self, Read};
-use std::time::{UNIX_EPOCH, SystemTime};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::parser;
 
@@ -8,6 +8,8 @@ pub mod execute;
 
 pub const INSTRUCTION_SIZE: u16 = 2;
 pub const REG_VF: usize = 15;
+pub const FONT_ADDR_START: u16 = 0x50;
+pub const CHAR_SIZE: u16 = 5;
 pub const FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70, 0xF0, 0x10, 0xF0, 0x80, 0xF0, 0xF0,
     0x10, 0xF0, 0x10, 0xF0, 0x90, 0x90, 0xF0, 0x10, 0x10, 0xF0, 0x80, 0xF0, 0x10, 0xF0, 0xF0, 0x80,
@@ -31,6 +33,7 @@ pub struct Machine {
     display_buf: [bool; 64 * 32],
     program_size: u16,
     rng_state: u64,
+    keys: [bool; 16],
 }
 
 impl Machine {
@@ -39,7 +42,7 @@ impl Machine {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos() as u64;
-        
+
         let mut machine = Machine {
             memory: [0; 4096],
             registers: [0; 16],
@@ -51,6 +54,7 @@ impl Machine {
             display_buf: [false; 64 * 32],
             program_size: 0,
             rng_state: seed,
+            keys: [false; 16],
         };
 
         machine.memory[0x50..0x50 + 80].copy_from_slice(&FONT);
@@ -109,6 +113,9 @@ impl Machine {
 
     pub fn dump(&self) {
         println!("PC: {}", self.pc);
+        println!("I: {}", self.i);
+        println!("DT: {}", self.dt);
+        println!("ST: {}", self.st);
         println!("Registers:\n\t{:?}", self.registers);
         println!("Stack:\n\t{:?}", self.stack);
     }
@@ -117,7 +124,7 @@ impl Machine {
         self.rng_state = self.rng_state.wrapping_mul(LCG_A).wrapping_add(LCG_C);
         (self.rng_state >> 24) as u8
     }
-    
+
     pub fn print_display(&self) {
         for y in 0..32 {
             for x in 0..64 {

@@ -1,4 +1,4 @@
-use crate::machine::{INSTRUCTION_SIZE, Machine, REG_VF};
+use crate::machine::{self, INSTRUCTION_SIZE, Machine, REG_VF};
 use crate::parser::Operation;
 
 impl Machine {
@@ -7,12 +7,17 @@ impl Machine {
             Operation::Clear => self.display_buf = [false; 64 * 32],
             Operation::SetPc(x) => self.pc = x,
             Operation::SetI(x) => self.i = x,
+            Operation::AddI(x) => {
+                let vx = self.registers[x];
+                let res = self.i.wrapping_add(vx as u16);
+                self.i = res;
+            }
             Operation::SetRg(i, x) => self.registers[i] = x,
             Operation::AddReg(x, kk) => {
                 let vx = self.registers[x];
                 let res = vx.wrapping_add(kk);
                 self.registers[x] = res;
-            },
+            }
             Operation::Arithmetic(code, x, y) => {
                 let (vx, vy) = (self.registers[x], self.registers[y]);
                 match code {
@@ -46,11 +51,11 @@ impl Machine {
                     }
                     _ => {}
                 }
-            },
+            }
             Operation::Random(x, kk) => {
                 let rnd = self.next_random();
                 self.registers[x] = rnd & kk;
-            },
+            }
             Operation::SkipK(use_eq, x, kk) => {
                 let vx = self.registers[x];
                 let skip = if use_eq { vx == kk } else { vx != kk };
@@ -65,9 +70,22 @@ impl Machine {
                     self.pc += INSTRUCTION_SIZE;
                 }
             }
+            Operation::SkipI(con_key_down, x) => {
+                let vx = self.registers[x] as usize;
+                let key_pressed = self.keys[vx];
+                let skip = if con_key_down { key_pressed } else { !key_pressed };
+                if skip {
+                    self.pc += INSTRUCTION_SIZE;
+                }
+            }
             Operation::Call(nnn) => {
                 self.stack.push(self.pc);
                 self.pc = nnn;
+            }
+            Operation::GetFont(x) => {
+                let vx = self.registers[x];
+                let addr = machine::FONT_ADDR_START + (machine::CHAR_SIZE * vx as u16);
+                self.i = addr;
             }
             Operation::Display(x, y, n) => {
                 self.registers[REG_VF] = 0;
@@ -87,7 +105,12 @@ impl Machine {
                 }
             }
             Operation::Return => self.pc = self.stack.pop().expect("return with empty stack"),
-            Operation::Unsupported | Operation::None => {}
+            Operation::CopyDelay(x) => self.registers[x] = self.dt,
+            Operation::WaitKey(x) => {}
+            Operation::SetDelay(x) => self.dt = self.registers[x],
+            Operation::SetSound(x) => self.st = self.registers[x], 
+            Operation::Invalid(ins) => panic!("invalid instruction: {ins}"),
+            Operation::Unsupported => {}
         };
     }
 }
