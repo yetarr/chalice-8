@@ -4,19 +4,7 @@ A CHIP-8 emulator written in Rust, built with as few external crates as possible
 
 ## Status
 
-In development. Implemented: machine state (memory, registers, stack, timers, display buffer), ROM loading, the fetch-decode-execute loop, simple cli display and the following opcodes:
-
-- `00E0` - clear display
-- `1NNN` - jump
-- `6XNN` - set register
-- `8XY0`–`8XYE` - full arithmetic/logic family (OR, AND, XOR, add/sub with carry, shifts)
-- `3XNN`, `4XNN`, `5XY0`, `9XY0` - conditional skips
-- `2NNN`, `00ee` - subroutine calls
-- `ANNN` - set index register
-- `DXYN` - sprite drawing
-- `7XNN` - add to register
-- `CXNN` - randomize
-- `FX07`–`FX15`–`FX18`–`FX1E`–`FX29` - timers and sprite loading
+In development. Implemented: machine state (memory, registers, stack, timers, display buffer), ROM loading, the fetch-decode-execute loop, simple cli display and all opcodes (except FX0A that needs a functional input handler).
 
 Not yet implemented: display rendering and keyboard input.
 

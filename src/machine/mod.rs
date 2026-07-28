@@ -112,6 +112,7 @@ impl Machine {
     }
 
     pub fn dump(&self) {
+        println!("------------------ DUMP ------------------");
         println!("PC: {}", self.pc);
         println!("I: {}", self.i);
         println!("DT: {}", self.dt);
@@ -126,6 +127,7 @@ impl Machine {
     }
 
     pub fn print_display(&self) {
+        println!("------------------- DISPLAY -------------------");
         for y in 0..32 {
             for x in 0..64 {
                 let pixel = self.display_buf[y * 64 + x];

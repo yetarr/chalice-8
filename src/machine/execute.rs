@@ -18,6 +18,12 @@ impl Machine {
                 let res = vx.wrapping_add(kk);
                 self.registers[x] = res;
             }
+            Operation::SplitReg(x) => {
+                let vx = self.registers[x];
+                self.memory[self.i as usize] = vx / 100;
+                self.memory[self.i as usize + 1] = (vx / 10) % 10;
+                self.memory[self.i as usize + 2] = vx % 10;
+            }
             Operation::Arithmetic(code, x, y) => {
                 let (vx, vy) = (self.registers[x], self.registers[y]);
                 match code {
@@ -107,6 +113,16 @@ impl Machine {
                             self.registers[REG_VF] = 1;
                         }
                     }
+                }
+            }
+            Operation::Write(x) => {
+                for reg in 0..=x {
+                    self.memory[self.i as usize + reg] = self.registers[reg];
+                }
+            }
+            Operation::Read(x) => {
+                for reg in 0..=x {
+                    self.registers[reg] = self.memory[self.i as usize + reg];
                 }
             }
             Operation::Return => self.pc = self.stack.pop().expect("return with empty stack"),
