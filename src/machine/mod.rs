@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{self, Read};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use crate::parser;
 
@@ -21,6 +21,8 @@ pub const FONT: [u8; 80] = [
 const LCG_A: u64 = 6364136223846793005;
 const LCG_C: u64 = 1442695040888963407;
 
+const SYNC_FREQ: f64 = 60.0;
+
 #[derive(Debug)]
 pub struct Machine {
     memory: [u8; 4096],
@@ -30,6 +32,7 @@ pub struct Machine {
     pc: u16,
     dt: u8,
     st: u8,
+    last_sync: Instant,
     display_buf: [bool; 64 * 32],
     program_size: u16,
     rng_state: u64,
@@ -51,6 +54,7 @@ impl Machine {
             pc: 0x200,
             dt: 0,
             st: 0,
+            last_sync: Instant::now(),
             display_buf: [false; 64 * 32],
             program_size: 0,
             rng_state: seed,
@@ -70,7 +74,7 @@ impl Machine {
         Ok(())
     }
 
-    pub fn read(&mut self) -> u16 {
+    fn read(&mut self) -> u16 {
         if self.pc + 1 >= self.memory.len() as u16 {
             panic!("invalid memory access")
         }
@@ -82,7 +86,20 @@ impl Machine {
         (high << 8) | low
     }
 
-    pub fn cycle(&mut self) {
+    fn sync_timers(&mut self) {
+        let elapsed = self.last_sync.elapsed();
+        if elapsed.as_secs_f64() >= 1.0 / SYNC_FREQ {
+            if self.dt > 0 {
+                self.dt -= 1;
+            }
+            if self.st > 0 {
+                self.st -= 1;
+            }
+            self.last_sync = Instant::now();
+        }
+    }
+
+    fn cycle(&mut self) {
         let opcode = self.read();
         let op = parser::decode(opcode);
         self.execute(op);
@@ -92,6 +109,7 @@ impl Machine {
         let mut prev_pc = self.pc;
         while self.pc < 0x200 + self.program_size {
             self.cycle();
+            self.sync_timers();
             if prev_pc == self.pc {
                 break;
             }
@@ -103,6 +121,7 @@ impl Machine {
         let mut prev_pc = self.pc;
         while self.pc < 0x200 + self.program_size {
             self.cycle();
+            self.sync_timers();
             self.dump();
             if prev_pc == self.pc {
                 break;
@@ -121,7 +140,7 @@ impl Machine {
         println!("Stack:\n\t{:?}", self.stack);
     }
 
-    pub fn next_random(&mut self) -> u8 {
+    fn next_random(&mut self) -> u8 {
         self.rng_state = self.rng_state.wrapping_mul(LCG_A).wrapping_add(LCG_C);
         (self.rng_state >> 24) as u8
     }
