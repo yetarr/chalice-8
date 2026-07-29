@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{self, Read};
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
-use crate::parser;
+use crate::{parser, renderer};
 
 pub mod execute;
 
@@ -25,7 +25,7 @@ const SYNC_FREQ: f64 = 60.0;
 
 #[derive(Debug)]
 pub struct Machine {
-    memory: [u8; 4096],
+    pub memory: [u8; 4096],
     registers: [u8; 16],
     stack: Vec<u16>,
     i: u16,
@@ -39,7 +39,7 @@ pub struct Machine {
     keys: [bool; 16],
 }
 
-impl Machine {
+impl<'a> Machine {
     pub fn new() -> Self {
         let seed = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -86,7 +86,7 @@ impl Machine {
         (high << 8) | low
     }
 
-    fn sync_timers(&mut self) {
+    pub fn sync_timers(&mut self) {
         let elapsed = self.last_sync.elapsed();
         if elapsed.as_secs_f64() >= 1.0 / SYNC_FREQ {
             if self.dt > 0 {
@@ -99,7 +99,7 @@ impl Machine {
         }
     }
 
-    fn cycle(&mut self) {
+    pub fn cycle(&mut self) {
         let opcode = self.read();
         let op = parser::decode(opcode);
         self.execute(op);
@@ -145,14 +145,7 @@ impl Machine {
         (self.rng_state >> 24) as u8
     }
 
-    pub fn print_display(&self) {
-        println!("------------------- DISPLAY -------------------");
-        for y in 0..32 {
-            for x in 0..64 {
-                let pixel = self.display_buf[y * 64 + x];
-                print!("{}", if pixel { "#" } else { " " });
-            }
-            println!();
-        }
+    pub fn display_buf(&self) -> &[bool; 64 * 32] {
+        &self.display_buf
     }
 }
