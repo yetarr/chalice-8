@@ -3,7 +3,7 @@ use iced::widget::canvas::{Path, Frame};
 use iced::{Color, Element, Rectangle, Renderer, Theme, mouse};
 use iced::time::{self, Duration};
 
-use crate::machine::Machine;
+use crate::machine::{DISPLAY_PIXELS, Machine};
 
 pub struct App {
     machine: Machine
@@ -31,7 +31,7 @@ pub fn update(app: &mut App, message: Message) {
     }
 }
 
-pub fn view(app: &App) -> Element<Message> {
+pub fn view(app: &App) -> Element<'_, Message> {
     canvas(ChaliceDisplay { buf: app.machine.display_buf() })
         .width(iced::Length::Fill)
         .height(iced::Length::Fill)
@@ -44,7 +44,7 @@ pub fn subscription(_app: &App) -> iced::Subscription<Message> {
 }
 
 struct ChaliceDisplay<'a> {
-    buf: &'a [bool; 64 * 32],
+    buf: &'a [bool; DISPLAY_PIXELS],
 }
 
 impl<'a> canvas::Program<Message> for ChaliceDisplay<'a> {

@@ -1,10 +1,10 @@
-use crate::machine::{self, INSTRUCTION_SIZE, Machine, REG_VF};
+use crate::machine::{self, INSTRUCTION_SIZE, Machine, REG_VF, DISPLAY_PIXELS};
 use crate::parser::Operation;
 
 impl Machine {
     pub fn execute(&mut self, op: Operation) {
         match op {
-            Operation::Clear => self.display_buf = [false; 64 * 32],
+            Operation::Clear => self.display_buf = [false; DISPLAY_PIXELS],
             Operation::SetPc(x) => self.pc = x,
             Operation::SetI(x) => self.i = x,
             Operation::AddI(x) => {
@@ -131,7 +131,7 @@ impl Machine {
             Operation::SetDelay(x) => self.dt = self.registers[x],
             Operation::SetSound(x) => self.st = self.registers[x],
             Operation::Invalid(ins) => panic!("invalid instruction: {ins}"),
-            Operation::Unsupported => {}
+            Operation::None => {}
         };
     }
 }

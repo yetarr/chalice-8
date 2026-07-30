@@ -22,7 +22,7 @@ pub enum Operation {
     SetSound(usize),
     Read(usize),
     Write(usize),
-    Unsupported,
+    None,
     Invalid(u16),
 }
 
@@ -38,7 +38,11 @@ pub fn decode(opcode: u16) -> Operation {
         0x0 => match n4 {
             0x0 if opcode == 0x00E0 => Operation::Clear,
             0xE if opcode == 0x00EE => Operation::Return,
-            _ => Operation::Invalid(opcode),
+            _ => {
+                return 
+                    if opcode == 0 { Operation::None }
+                    else { Operation::Invalid(opcode) }
+            }
         },
         0x1 => Operation::SetPc(nnn),
         0x2 => Operation::Call(nnn),
@@ -84,6 +88,6 @@ pub fn decode(opcode: u16) -> Operation {
             0x65 => Operation::Read(n2 as usize),
             _ => Operation::Invalid(opcode),
         },
-        _ => Operation::Unsupported,
+        _ => Operation::Invalid(opcode),
     }
 }

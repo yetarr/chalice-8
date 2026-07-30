@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{self, Read};
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
-use crate::{parser, renderer};
+use crate::parser;
 
 pub mod execute;
 
@@ -10,6 +10,7 @@ pub const INSTRUCTION_SIZE: u16 = 2;
 pub const REG_VF: usize = 15;
 pub const FONT_ADDR_START: u16 = 0x50;
 pub const CHAR_SIZE: u16 = 5;
+pub const DISPLAY_PIXELS: usize = 64 * 32;
 pub const FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70, 0xF0, 0x10, 0xF0, 0x80, 0xF0, 0xF0,
     0x10, 0xF0, 0x10, 0xF0, 0x90, 0x90, 0xF0, 0x10, 0x10, 0xF0, 0x80, 0xF0, 0x10, 0xF0, 0xF0, 0x80,
@@ -33,13 +34,13 @@ pub struct Machine {
     dt: u8,
     st: u8,
     last_sync: Instant,
-    display_buf: [bool; 64 * 32],
+    display_buf: [bool; DISPLAY_PIXELS],
     program_size: u16,
     rng_state: u64,
     keys: [bool; 16],
 }
 
-impl<'a> Machine {
+impl Machine {
     pub fn new() -> Self {
         let seed = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -55,7 +56,7 @@ impl<'a> Machine {
             dt: 0,
             st: 0,
             last_sync: Instant::now(),
-            display_buf: [false; 64 * 32],
+            display_buf: [false; DISPLAY_PIXELS],
             program_size: 0,
             rng_state: seed,
             keys: [false; 16],
@@ -76,7 +77,8 @@ impl<'a> Machine {
 
     fn read(&mut self) -> u16 {
         if self.pc + 1 >= self.memory.len() as u16 {
-            panic!("invalid memory access")
+            //panic!("invalid memory access")
+            return 0xFFFF;
         }
         let (high, low) = (
             self.memory[self.pc as usize] as u16,
@@ -101,6 +103,11 @@ impl<'a> Machine {
 
     pub fn cycle(&mut self) {
         let opcode = self.read();
+
+        if opcode == 0xFFFF {
+            return;
+        } 
+
         let op = parser::decode(opcode);
         self.execute(op);
     }
