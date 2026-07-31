@@ -39,6 +39,7 @@ pub struct Machine {
     program_size: u16,
     rng_state: u64,
     keys: [bool; 16],
+    halt: bool,
 }
 
 impl Machine {
@@ -61,6 +62,7 @@ impl Machine {
             program_size: 0,
             rng_state: seed,
             keys: [false; 16],
+            halt: false,
         };
 
         machine.memory[0x50..0x50 + 80].copy_from_slice(&FONT);
@@ -86,6 +88,24 @@ impl Machine {
         );
         self.pc += INSTRUCTION_SIZE;
         Some((high << 8) | low)
+    }
+
+    pub fn set_key(&mut self, key: &str, pressed: bool) {
+        if let Some(key) = parser::key_to_chip8(key) {
+            self.keys[key] = pressed;
+        }
+
+        self.dump();
+    }
+
+    pub fn get_active_key(&self) -> Option<u8> {
+        for (i, pressed) in self.keys.iter().enumerate() {
+            if *pressed {
+                return Some(i as u8);
+            }
+        }
+
+        None
     }
 
     pub fn sync_timers(&mut self) {
@@ -116,6 +136,7 @@ impl Machine {
         println!("ST: {}", self.st);
         println!("Registers:\n\t{:?}", self.registers);
         println!("Stack:\n\t{:?}", self.stack);
+        println!("Keys:\n\t{:?}", self.keys);
     }
 
     fn next_random(&mut self) -> u8 {

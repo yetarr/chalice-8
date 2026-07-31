@@ -1,3 +1,6 @@
+use iced::keyboard::key;
+use iced::wgpu::hal;
+
 use crate::machine::{self, INSTRUCTION_SIZE, Machine, REG_VF, DISPLAY_PIXELS};
 use crate::parser::Operation;
 
@@ -127,7 +130,14 @@ impl Machine {
             }
             Operation::Return => self.pc = self.stack.pop().expect("return with empty stack"),
             Operation::CopyDelay(x) => self.registers[x] = self.dt,
-            Operation::WaitKey(_x) => {}
+            Operation::WaitKey(x) => {
+                if !self.keys.iter().any(|k| *k) {
+                    self.halt = true
+                } else {
+                    self.halt = false;
+                    self.registers[x] = self.get_active_key().unwrap();
+                }
+            }
             Operation::SetDelay(x) => self.dt = self.registers[x],
             Operation::SetSound(x) => self.st = self.registers[x],
             Operation::Invalid(ins) => panic!("invalid instruction: {ins}"),
