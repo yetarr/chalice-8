@@ -34,12 +34,12 @@ pub fn update(app: &mut App, message: Message) {
         Message::Event(event) => {
             if let Keyboard(keyboard::Event::KeyPressed {
                 key,
-                modified_key,
+                modified_key: _,
                 physical_key,
-                location,
-                modifiers,
-                text,
-                repeat,
+                location: _,
+                modifiers: _,
+                text: _,
+                repeat: _,
             }) = &event
             {
                 let key = &key.to_latin(*physical_key).unwrap_or('0').to_string();
@@ -48,10 +48,10 @@ pub fn update(app: &mut App, message: Message) {
 
             if let Keyboard(keyboard::Event::KeyReleased {
                 key,
-                modified_key,
+                modified_key: _,
                 physical_key,
-                location,
-                modifiers,
+                location: _,
+                modifiers: _,
             }) = &event
             {
                 let key = &key.to_latin(*physical_key).unwrap_or('0').to_string();

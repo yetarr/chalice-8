@@ -4,9 +4,7 @@ A CHIP-8 emulator written in Rust, built with as few external crates as possible
 
 ## Status
 
-In development. Implemented: machine state (memory, registers, stack, timers, display buffer), ROM loading, the fetch-decode-execute loop, simple cli display and all opcodes (except FX0A that needs a functional input handler).
-
-Not yet implemented: display rendering and keyboard input.
+In development. Implemented: machine state (memory, registers, stack, timers, display buffer), ROM loading, the fetch-decode-execute loop, display rendering, keyboard handling and all opcodes.
 
 ## Usage
 

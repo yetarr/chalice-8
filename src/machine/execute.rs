@@ -1,7 +1,4 @@
-use iced::keyboard::key;
-use iced::wgpu::hal;
-
-use crate::machine::{self, INSTRUCTION_SIZE, Machine, REG_VF, DISPLAY_PIXELS};
+use crate::machine::{self, DISPLAY_PIXELS, INSTRUCTION_SIZE, Machine, REG_VF};
 use crate::parser::Operation;
 
 impl Machine {
