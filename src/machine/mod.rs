@@ -9,6 +9,7 @@ pub mod execute;
 pub const INSTRUCTION_SIZE: u16 = 2;
 pub const REG_VF: usize = 15;
 pub const FONT_ADDR_START: u16 = 0x50;
+pub const USABLE_ADDR_START: u16 = 0x200;
 pub const CHAR_SIZE: u16 = 5;
 pub const DISPLAY_PIXELS: usize = 64 * 32;
 pub const FONT: [u8; 80] = [
@@ -75,17 +76,16 @@ impl Machine {
         Ok(())
     }
 
-    fn read(&mut self) -> u16 {
-        if self.pc + 1 >= self.memory.len() as u16 {
-            //panic!("invalid memory access")
-            return 0xFFFF;
+    fn read(&mut self) -> Option<u16> {
+        if self.pc + 1 >= USABLE_ADDR_START + self.program_size {
+            return None;
         }
         let (high, low) = (
             self.memory[self.pc as usize] as u16,
             self.memory[self.pc as usize + 1] as u16,
         );
         self.pc += INSTRUCTION_SIZE;
-        (high << 8) | low
+        Some((high << 8) | low)
     }
 
     pub fn sync_timers(&mut self) {
@@ -102,38 +102,9 @@ impl Machine {
     }
 
     pub fn cycle(&mut self) {
-        let opcode = self.read();
-
-        if opcode == 0xFFFF {
-            return;
-        } 
-
-        let op = parser::decode(opcode);
-        self.execute(op);
-    }
-
-    pub fn run(&mut self) {
-        let mut prev_pc = self.pc;
-        while self.pc < 0x200 + self.program_size {
-            self.cycle();
-            self.sync_timers();
-            if prev_pc == self.pc {
-                break;
-            }
-            prev_pc = self.pc;
-        }
-    }
-
-    pub fn run_with_dump(&mut self) {
-        let mut prev_pc = self.pc;
-        while self.pc < 0x200 + self.program_size {
-            self.cycle();
-            self.sync_timers();
-            self.dump();
-            if prev_pc == self.pc {
-                break;
-            }
-            prev_pc = self.pc;
+        if let Some(op) = self.read() {
+            let op = parser::decode(op);
+            self.execute(op);
         }
     }
 
