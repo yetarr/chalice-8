@@ -4,16 +4,26 @@ use iced::time::{self, Duration};
 use iced::widget::canvas;
 use iced::widget::canvas::{Frame, Path};
 use iced::{Color, Element, Rectangle, Renderer, Theme, mouse};
+use rodio::source::SineWave;
+use rodio::{MixerDeviceSink, Player};
 
 use crate::machine::{DISPLAY_PIXELS, Machine};
 
 pub struct App {
     machine: Machine,
+    _sink: MixerDeviceSink,
+    beep_player: Player,
+    is_playing: bool,
 }
 
 impl App {
     pub fn new(machine: Machine) -> Self {
-        App { machine }
+        let mut sink = rodio::DeviceSinkBuilder::open_default_sink()
+            .expect("open default audio stream");
+        sink.log_on_drop(false);
+        let beep_player = Player::connect_new(sink.mixer());
+        beep_player.set_volume(0.5);
+        App { machine, _sink: sink, beep_player, is_playing: false }
     }
 }
 
@@ -30,6 +40,15 @@ pub fn update(app: &mut App, message: Message) {
                 app.machine.cycle();
             }
             app.machine.sync_timers();
+
+            let should_play = app.machine.can_play_sound();
+            if should_play && !app.is_playing {
+                app.beep_player.append(SineWave::new(440.0));
+                app.is_playing = true;
+            } else if !should_play && app.is_playing {
+                app.beep_player.stop();
+                app.is_playing = false;
+            }
         }
         Message::Event(event) => {
             if let Keyboard(keyboard::Event::KeyPressed {

@@ -27,6 +27,7 @@ const SYNC_FREQ: f64 = 60.0;
 
 #[derive(Debug)]
 pub struct Machine {
+    debug: bool,
     pub memory: [u8; 4096],
     registers: [u8; 16],
     stack: Vec<u16>,
@@ -50,6 +51,7 @@ impl Machine {
             .as_nanos() as u64;
 
         let mut machine = Machine {
+            debug: false,
             memory: [0; 4096],
             registers: [0; 16],
             stack: Vec::new(),
@@ -67,6 +69,10 @@ impl Machine {
 
         machine.memory[0x50..0x50 + 80].copy_from_slice(&FONT);
         machine
+    }
+
+    pub fn debug(&mut self) {
+        self.debug = true;
     }
 
     pub fn load(&mut self, path: &str) -> io::Result<()> {
@@ -90,6 +96,10 @@ impl Machine {
         Some((high << 8) | low)
     }
 
+    pub fn can_play_sound(&self) -> bool {
+        self.st > 0
+    }
+
     pub fn set_key(&mut self, key: &str, pressed: bool) {
         if let Some(key) = parser::key_to_chip8(key) {
             self.keys[key] = pressed;
@@ -105,16 +115,6 @@ impl Machine {
                 self.set_key(key, true);
             }
         }
-    }
-
-    pub fn get_active_key(&self) -> Option<u8> {
-        for (i, pressed) in self.keys.iter().enumerate() {
-            if *pressed {
-                return Some(i as u8);
-            }
-        }
-
-        None
     }
 
     pub fn sync_timers(&mut self) {
@@ -138,6 +138,7 @@ impl Machine {
         if let Some(op) = self.read() {
             let op = parser::decode(op);
             self.execute(op);
+            if self.debug { self.dump(); }
         }
     }
 
