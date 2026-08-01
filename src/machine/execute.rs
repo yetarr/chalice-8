@@ -128,12 +128,7 @@ impl Machine {
             Operation::Return => self.pc = self.stack.pop().expect("return with empty stack"),
             Operation::CopyDelay(x) => self.registers[x] = self.dt,
             Operation::WaitKey(x) => {
-                if !self.keys.iter().any(|k| *k) {
-                    self.halt = true
-                } else {
-                    self.halt = false;
-                    self.registers[x] = self.get_active_key().unwrap();
-                }
+                self.waiting_for_key = Some(x);
             }
             Operation::SetDelay(x) => self.dt = self.registers[x],
             Operation::SetSound(x) => self.st = self.registers[x],

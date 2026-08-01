@@ -43,7 +43,7 @@ pub fn update(app: &mut App, message: Message) {
             }) = &event
             {
                 let key = &key.to_latin(*physical_key).unwrap_or('0').to_string();
-                app.machine.set_key(key, true);
+                app.machine.key_pressed(key);
             }
 
             if let Keyboard(keyboard::Event::KeyReleased {

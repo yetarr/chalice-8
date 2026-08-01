@@ -39,7 +39,7 @@ pub struct Machine {
     program_size: u16,
     rng_state: u64,
     keys: [bool; 16],
-    halt: bool,
+    waiting_for_key: Option<usize>,
 }
 
 impl Machine {
@@ -62,7 +62,7 @@ impl Machine {
             program_size: 0,
             rng_state: seed,
             keys: [false; 16],
-            halt: false,
+            waiting_for_key: None,
         };
 
         machine.memory[0x50..0x50 + 80].copy_from_slice(&FONT);
@@ -94,8 +94,17 @@ impl Machine {
         if let Some(key) = parser::key_to_chip8(key) {
             self.keys[key] = pressed;
         }
+    }
 
-        self.dump();
+    pub fn key_pressed(&mut self, key: &str) {
+        if let Some(chip8_key) = parser::key_to_chip8(key) {
+            if let Some(reg) = self.waiting_for_key {
+                self.registers[reg] = chip8_key as u8;
+                self.waiting_for_key = None;
+            } else {
+                self.set_key(key, true);
+            }
+        }
     }
 
     pub fn get_active_key(&self) -> Option<u8> {
@@ -122,6 +131,10 @@ impl Machine {
     }
 
     pub fn cycle(&mut self) {
+        if self.waiting_for_key.is_some() {
+            return;
+        }
+
         if let Some(op) = self.read() {
             let op = parser::decode(op);
             self.execute(op);
